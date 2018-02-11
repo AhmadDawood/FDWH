@@ -1,0 +1,161 @@
+﻿private void CmdBtnGenerate_Click(object sender, EventArgs e)
+        {
+
+            LinqToSql.LinqToSqlserverDataContext db = new LinqToSql.LinqToSqlserverDataContext();
+
+
+            // var test =
+            var test =
+                from c in db.DimCustomers
+                //from g in db.DimGeographies
+                join g in db.DimGeographies on c.CustomerKeyAlternate equals g.GeoIDAlternateKey
+                //where c.CustomerKeyAlternate == 100
+                //where c.CustomerKeyAlternate == g.GeoIDAlternateKey
+
+                select new
+                        {
+                            First_Name = c.First_Name,
+                            Last_Name = c.Last_Name,
+                            City = g.City,
+                            Address = g.Address,
+                            Country = g.Country
+                        };
+
+
+
+
+            //DataTable rDT = test.CopyToDataTable<DataRow>();
+            //--------------------------------------------------------------------
+
+            //--------------------------------------------------------------------
+
+
+            // Things that are relatively static.
+            //1- PathtoDesktop.
+
+            string path = Environment.GetFolderPath(System.Environment.SpecialFolder.DesktopDirectory);
+            //2- Open File textwriter.
+            using (TextWriter writer = File.CreateText(path + "\\Report1.txt"))
+            {
+                //3- Write Report Header.
+                writer.WriteLine("      ABC University Data Warehouse Reports      ");
+                writer.WriteLine(writer.NewLine);
+                writer.WriteLine("Date Created On:  " + DateTime.Now.ToShortDateString() + " " + DateTime.Now.ToShortTimeString());
+                writer.WriteLine("____________________________________________________________________________________");
+                //4- Write Down the Report Data Fields[Field Titles] using a text box.
+
+                TextBox txthead = new TextBox();
+                if (test.Any())
+                {
+
+                    Type t = test.First().GetType();
+                    foreach (PropertyInfo p in t.GetProperties())
+                    {
+
+
+                        txthead.Text += p.Name + "          ";
+
+                    }
+                }
+
+                writer.WriteLine(txthead.Text);
+
+                //--------------------------------------------------------------------------------------
+
+
+                foreach (var t in test)
+                {
+
+                    writer.WriteLine("____________________________________________________________________________________");
+                    writer.WriteLine(t.First_Name + ' ' + t.Last_Name + ',' + t.Address + ',' + t.City + ',' + t.Country);
+
+                    writer.Write(writer.NewLine);
+                }
+            }
+
+            MessageBox.Show("File Report1.txt Written Successfully on User Desktop", "Information", MessageBoxButtons.OK, MessageBoxIcon.Information);
+        }
+//--------------------------------------------------------------------------------------------
+
+    private void button1_Click(object sender, EventArgs e)
+        {
+            string header;
+            var dc = new LinqToSql.LinqToSqlserverDataContext(ConfigurationManager.ConnectionStrings["UDW"].ConnectionString);
+            var query = from c in dc.DimCustomers
+                        where c.Age > 15
+                        select c;
+
+            string path = Environment.GetFolderPath(System.Environment.SpecialFolder.DesktopDirectory);
+
+            using (var command = dc.GetCommand(query))
+            {
+                command.Connection.Open();
+                //    var reader = command.ExecuteReader();
+
+                using (var reader = command.ExecuteReader())
+                {
+
+                    using (StreamWriter sw = File.CreateText(path + "\\sw1.txt"))
+                    {
+
+
+                        header = string.Empty;
+                        using (DataTable dt = new DataTable())
+                        {
+                            //DataTable dt = new DataTable();
+
+                            reader.Read();
+
+                            if (reader.HasRows)
+                            {
+
+                                dt.Load(reader);
+                                //Count Total Number of Columns in Data table for writing report header into report file.
+                                int columnCount = 0;
+                                columnCount = dt.Columns.Count;
+
+                                for (int i = 0; i < columnCount; i++)
+                                {
+                                    //Gather Column Names of a Table.
+                                    header += dt.Columns[i].ColumnName + "     ";
+                                }
+
+
+                                //Debug.Print(header); //Prints Report Header.
+                                sw.Write("                     *** ABC University DataWarehouse ***                                ");
+                                sw.Write(sw.NewLine);
+                                sw.Write(sw.NewLine);
+                                sw.Write("Date Created On:  " + DateTime.Now.ToShortDateString() + " " + DateTime.Now.ToShortTimeString());
+                                sw.Write(sw.NewLine);
+                                sw.Write("__________________________________________________________________________________________________________________________");
+                                sw.Write(sw.NewLine);
+                                sw.Write(header);  // Write header into report file.
+                                sw.Write(sw.NewLine);
+                                sw.Write("__________________________________________________________________________________________________________________________");
+                                sw.Write(sw.NewLine);
+
+                                sw.Write(sw.NewLine);
+                                //-----------------------------------------------------
+                                //Extracts Report detailed data into Report file.
+
+                                foreach (DataRow row in dt.Rows)
+                                {
+                                    foreach (DataColumn column in dt.Columns)
+                                    {
+
+                                        // Debug.Print(row[column].ToString());
+                                        sw.Write(row[column].ToString() + "     ");
+
+                                    }
+                                    sw.Write(sw.NewLine);
+                                }
+
+                                sw.Write("____________________________________________________________________________________________");
+                                //-----------------------------------------------------
+                            }
+                        }
+                    }
+                }
+
+            }
+    
