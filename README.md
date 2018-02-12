@@ -36,5 +36,3 @@ Functional Requirements:
 10.	Interface must provide the facility to Drill Down and Roll UP Operations.   
 
 Tools: Microsoft.Net Framework / Java, SQL Server
-
-(UDW.Zip file contains vs2013 Complete Project source folder along with DB's.)
